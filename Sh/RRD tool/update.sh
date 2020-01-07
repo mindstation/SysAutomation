@@ -1,5 +1,3 @@
-# cat /home/user/RRD_mon/UPS/update.sh
-
 #!/bin/sh
 
 ######################################################################################
@@ -26,26 +24,24 @@
 #SOFTWARE.
 ######################################################################################
 
-RRD_BASE="/home/user/RRD_mon/UPS/ippon_main.rrd"
+RRD_BASE="$(dirname $0)/ippon_main.rrd"
 
+upsget=$(upsc ippon_main@localhost 2>/dev/null)
 
-#upsget=`upsc ippon_main@localhost`
+if [ -f "$RRD_BASE" ]
+then
+	#в выводе upsc выбираю строку с "input.voltage:", разбиваю ее на две части, до ":" и после, из второй части убираю все пробелы
+	ups_invol=$(echo "$upsget" | grep "input.voltage:" | awk -F : '{print $2}' | sed 's/ //')
+	ups_outvol=$(echo "$upsget" | grep "output.voltage:" | awk -F : '{print $2}' | sed 's/ //')
+	ups_load=$(echo "$upsget" | grep "ups.load:" | awk -F : '{print $2}' | sed 's/ //')
+	ups_temp=$(echo "$upsget" | grep "ups.temperature:" | awk -F : '{print $2}' | sed 's/ //')
+	ups_batt_vol=$(echo "$upsget" | grep "battery.voltage:" | awk -F : '{print $2}' | sed 's/ //')
+	ups_batt_chrg=$(echo "$upsget" | grep "battery.charge:" | awk -F : '{print $2}' | sed 's/ //')
 
-ups_invol=`upsc ippon_main@localhost input.voltage 2>/dev/null`
-
-ups_outvol=`upsc ippon_main@localhost output.voltage 2>/dev/null`
-
-ups_load=`upsc ippon_main@localhost ups.load 2>/dev/null`
-
-ups_temp=`upsc ippon_main@localhost ups.temperature 2>/dev/null`
-
-ups_batt_vol=`upsc ippon_main@localhost battery.voltage 2>/dev/null`
-
-ups_batt_chrg=`upsc ippon_main@localhost battery.charge 2>/dev/null`
-
-rrdtool update $RRD_BASE N:$ups_invol:$ups_outvol:$ups_load:$ups_temp:$ups_batt_vol:$ups_batt_chrg
-
-# Подавляю сообщения о работе и ошибках программ вызываемых в скрипте
-1>/dev/null 2>&1
+	rrdtool update "$RRD_BASE" N:$ups_invol:$ups_outvol:$ups_load:$ups_temp:$ups_batt_vol:$ups_batt_chrg
+else
+	echo "File $RRD_BASE not found!"
+	exit 1
+fi
 
 exit 0
